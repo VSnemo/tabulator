@@ -646,7 +646,7 @@ ColumnManager.prototype.addColumn = function(definition, before, nextToColumn){
 			this.table.modules.columnCalcs.recalc(this.table.rowManager.activeRows);
 		}
 
-		this.redraw(true);
+		this.redraw(true, true);
 
 		if(this.table.modules.layout.getMode() != "fitColumns"){
 			column.reinitializeWidth();
@@ -705,7 +705,9 @@ ColumnManager.prototype.redraw = function(force){
 			this._verticalAlignHeaders();
 		}
 
-		this.table.rowManager.resetScroll();
+		if(!preserveScroll){
+			this.table.rowManager.resetScroll();
+		}
 		this.table.rowManager.reinitialize();
 	}
 
