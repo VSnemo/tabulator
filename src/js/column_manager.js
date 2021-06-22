@@ -698,7 +698,7 @@ ColumnManager.prototype.deregisterColumn = function(column){
 };
 
 //redraw columns
-ColumnManager.prototype.redraw = function(force){
+ColumnManager.prototype.redraw = function(force, preserveScroll){
 	if(force){
 
 		if(Tabulator.prototype.helpers.elVisible(this.element)){
