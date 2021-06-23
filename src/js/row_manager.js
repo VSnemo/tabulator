@@ -294,6 +294,7 @@ RowManager.prototype.scrollToRow = function(row, position, ifVisible){
 ////////////////// Data Handling //////////////////
 
 RowManager.prototype.setData = function(data, renderInPosition, columnsChanged){
+	// 4
 	var self = this;
 
 	return new Promise((resolve, reject)=>{
@@ -309,7 +310,7 @@ RowManager.prototype.setData = function(data, renderInPosition, columnsChanged){
 			if(this.table.options.autoColumns && columnsChanged){
 				this.table.columnManager.generateColumnsFromRowData(data);
 			}
-			this.resetScroll();
+			// this.resetScroll();
 
 			this._setDataActual(data);
 
@@ -320,6 +321,7 @@ RowManager.prototype.setData = function(data, renderInPosition, columnsChanged){
 };
 
 RowManager.prototype._setDataActual = function(data, renderInPosition){
+	// 5
 	var self = this;
 
 	self.table.options.dataLoading.call(this.table, data);
@@ -817,6 +819,7 @@ RowManager.prototype._genRemoteRequest = function(){
 
 //choose the path to refresh data after a filter update
 RowManager.prototype.filterRefresh = function(){
+	// 1
 	var table = this.table,
 	options = table.options,
 	left = this.scrollLeft;
@@ -877,6 +880,7 @@ RowManager.prototype.scrollHorizontal = function(left){
 
 //set active data set
 RowManager.prototype.refreshActiveData = function(stage, skipStage, renderInPosition){
+	//6
 	var self = this,
 	table = this.table,
 	cascadeOrder = ["all", "filter", "sort", "display", "freeze", "group", "tree", "page"],

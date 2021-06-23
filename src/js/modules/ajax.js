@@ -146,6 +146,7 @@ Ajax.prototype.getUrl = function(){
 
 //lstandard loading function
 Ajax.prototype.loadData = function(inPosition, columnsChanged){
+	//2 
 	var self = this;
 
 	if(this.progressiveLoad){
@@ -179,6 +180,7 @@ Ajax.prototype._loadDataProgressive = function(){
 };
 
 Ajax.prototype._loadDataStandard = function(inPosition, columnsChanged){
+	// 3
 	return new Promise((resolve, reject)=>{
 		this.sendRequest(inPosition)
 		.then((data)=>{
