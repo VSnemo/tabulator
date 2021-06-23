@@ -2293,6 +2293,16 @@ Tabulator.prototype.findTable = function(query){
 	return Array.isArray(results) && !results.length ? false : results;
 }
 
+Tabulator.prototype.getVerticalScroll = function () {
+    var rowHolder = this.rowManager.getElement();
+    var scrollTop = rowHolder.scrollTop;
+    return scrollTop;
+}
+
+Tabulator.prototype.setVerticalScroll = function (top) {
+    var rowHolder = this.rowManager.getElement();
+    rowHolder.scrollTop = top;
+}
 /*=include modules/layout.js */
 /*=include modules/localize.js */
 /*=include modules/comms.js */
