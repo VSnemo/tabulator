@@ -1290,7 +1290,7 @@ RowManager.prototype.renderTable = function(){
 
 	this.table.options.renderStarted.call(this.table);
 
-	this.element.scrollTop = 0;
+	// this.element.scrollTop = 0;
 
 	switch(this.renderMode){
 		case "classic":
