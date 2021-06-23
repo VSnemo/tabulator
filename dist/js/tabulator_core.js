@@ -9746,3 +9746,13 @@ Comms.prototype.receive = function (table, module, action, data) {
 };
 
 Tabulator.prototype.registerModule("comms", Comms);
+Tabulator.prototype.getVerticalScroll = function () {
+    var rowHolder = this.rowManager.getElement();
+    var scrollTop = rowHolder.scrollTop;
+    return scrollTop;
+}
+
+Tabulator.prototype.setVerticalScroll = function (top) {
+    var rowHolder = this.rowManager.getElement();
+    rowHolder.scrollTop = top;
+}
