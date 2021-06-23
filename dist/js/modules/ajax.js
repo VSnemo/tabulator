@@ -150,6 +150,7 @@ Ajax.prototype.getUrl = function () {
 
 //lstandard loading function
 Ajax.prototype.loadData = function (inPosition, columnsChanged) {
+	//2 
 	var self = this;
 
 	if (this.progressiveLoad) {
@@ -184,6 +185,7 @@ Ajax.prototype._loadDataProgressive = function () {
 Ajax.prototype._loadDataStandard = function (inPosition, columnsChanged) {
 	var _this = this;
 
+	// 3
 	return new Promise(function (resolve, reject) {
 		_this.sendRequest(inPosition).then(function (data) {
 			_this.table.rowManager.setData(data, inPosition, columnsChanged).then(function () {

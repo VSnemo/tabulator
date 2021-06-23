@@ -1124,7 +1124,7 @@ ColumnManager.prototype.addColumn = function (definition, before, nextToColumn) 
 			_this4.table.modules.columnCalcs.recalc(_this4.table.rowManager.activeRows);
 		}
 
-		_this4.redraw(true);
+		_this4.redraw(true, true);
 
 		if (_this4.table.modules.layout.getMode() != "fitColumns") {
 
@@ -1188,7 +1188,7 @@ ColumnManager.prototype.deregisterColumn = function (column) {
 
 //redraw columns
 
-ColumnManager.prototype.redraw = function (force) {
+ColumnManager.prototype.redraw = function (force, preserveScroll) {
 
 	if (force) {
 
@@ -1197,7 +1197,10 @@ ColumnManager.prototype.redraw = function (force) {
 			this._verticalAlignHeaders();
 		}
 
-		this.table.rowManager.resetScroll();
+		if (!preserveScroll) {
+
+			this.table.rowManager.resetScroll();
+		}
 
 		this.table.rowManager.reinitialize();
 	}
@@ -2977,6 +2980,7 @@ RowManager.prototype.scrollToRow = function (row, position, ifVisible) {
 RowManager.prototype.setData = function (data, renderInPosition, columnsChanged) {
 	var _this12 = this;
 
+	// 4
 	var self = this;
 
 	return new Promise(function (resolve, reject) {
@@ -2992,7 +2996,7 @@ RowManager.prototype.setData = function (data, renderInPosition, columnsChanged)
 			if (_this12.table.options.autoColumns && columnsChanged) {
 				_this12.table.columnManager.generateColumnsFromRowData(data);
 			}
-			_this12.resetScroll();
+			// this.resetScroll();
 
 			_this12._setDataActual(data);
 		}
@@ -3002,6 +3006,7 @@ RowManager.prototype.setData = function (data, renderInPosition, columnsChanged)
 };
 
 RowManager.prototype._setDataActual = function (data, renderInPosition) {
+	// 5
 	var self = this;
 
 	self.table.options.dataLoading.call(this.table, data);
@@ -3492,6 +3497,7 @@ RowManager.prototype._genRemoteRequest = function () {
 
 //choose the path to refresh data after a filter update
 RowManager.prototype.filterRefresh = function () {
+	// 1
 	var table = this.table,
 	    options = table.options,
 	    left = this.scrollLeft;
@@ -3551,6 +3557,7 @@ RowManager.prototype.scrollHorizontal = function (left) {
 
 //set active data set
 RowManager.prototype.refreshActiveData = function (stage, skipStage, renderInPosition) {
+	//6
 	var self = this,
 	    table = this.table,
 	    cascadeOrder = ["all", "filter", "sort", "display", "freeze", "group", "tree", "page"],
@@ -4743,6 +4750,11 @@ VDomHoz.prototype.reinitialize = function (update, blockRedraw) {
 
 			config.leftPos = colPos;
 			config.rightPos = colPos + width;
+			config.width = width;
+
+			if (_this18.table.options.layout === "fitData") {
+				config.fitDataCheck = true;
+			}
 
 			if (colPos + width > _this18.vDomScrollPosLeft && colPos < _this18.vDomScrollPosRight) {
 				//column is visible
@@ -4832,15 +4844,15 @@ VDomHoz.prototype.colPositionAdjust = function (start, end, diff) {
 	for (var i = start; i < end; i++) {
 		var column = this.columns[i];
 
-		column.modules.vdomHoz.leftPos -= diff;
-		column.modules.vdomHoz.rightPos -= diff;
+		column.modules.vdomHoz.leftPos += diff;
+		column.modules.vdomHoz.rightPos += diff;
 	}
 };
 
 VDomHoz.prototype.addColRight = function () {
 	var column = this.columns[this.rightCol + 1],
 	    rows,
-	    oldWidth,
+	    newWidth,
 	    widthDiff;
 
 	if (column && column.modules.vdomHoz.leftPos <= this.vDomScrollPosRight) {
@@ -4855,21 +4867,7 @@ VDomHoz.prototype.addColRight = function () {
 			}
 		});
 
-		if (this.fitDataColAvg) {
-
-			oldWidth = column.getWidth();
-
-			if (oldWidth === this.fitDataColAvg) {
-				column.reinitializeWidth();
-
-				widthDiff = oldWidth - column.getWidth();
-
-				if (widthDiff) {
-					column.modules.vdomHoz.rightPos -= widthDiff;
-					this.colPositionAdjust(this.rightCol + 1, this.columns.length, widthDiff);
-				}
-			}
-		}
+		this.fitDataColActualWidthCheck(column);
 
 		this.rightCol++;
 
@@ -4899,6 +4897,8 @@ VDomHoz.prototype.addColLeft = function () {
 				cell.cellRendered();
 			}
 		});
+
+		this.fitDataColActualWidthCheck(column);
 
 		if (!this.leftCol) {
 			this.vDomPadLeft = 0;
@@ -4960,6 +4960,25 @@ VDomHoz.prototype.removeColLeft = function () {
 		this.leftCol++;
 
 		this.removeColLeft();
+	}
+};
+
+VDomHoz.prototype.fitDataColActualWidthCheck = function (column) {
+	var newWidth, widthDiff;
+
+	if (column.modules.vdomHoz.fitDataCheck) {
+		column.reinitializeWidth();
+
+		newWidth = column.getWidth();
+		widthDiff = newWidth - column.modules.vdomHoz.width;
+
+		if (widthDiff) {
+			column.modules.vdomHoz.rightPos += widthDiff;
+			column.modules.vdomHoz.width = newWidth;
+			this.colPositionAdjust(this.rightCol + 2, this.columns.length, widthDiff);
+		}
+
+		column.modules.vdomHoz.fitDataCheck = false;
 	}
 };
 
@@ -9107,24 +9126,28 @@ Tabulator.prototype.findTable = function (query) {
 	return Array.isArray(results) && !results.length ? false : results;
 };
 
+Tabulator.prototype.getVerticalScroll = function () {
+	var rowHolder = this.rowManager.getElement();
+	var scrollTop = rowHolder.scrollTop;
+	return scrollTop;
+};
+
+Tabulator.prototype.setVerticalScroll = function (top) {
+	var rowHolder = this.rowManager.getElement();
+	rowHolder.scrollTop = top;
+};
 var Layout = function Layout(table) {
-
 	this.table = table;
-
 	this.mode = null;
 };
 
 //initialize layout system
-
 Layout.prototype.initialize = function (layout) {
 
 	if (this.modes[layout]) {
-
 		this.mode = layout;
 	} else {
-
 		console.warn("Layout Error - invalid mode set, defaulting to 'fitData' : " + layout);
-
 		this.mode = 'fitData';
 	}
 
@@ -9132,79 +9155,59 @@ Layout.prototype.initialize = function (layout) {
 };
 
 Layout.prototype.getMode = function () {
-
 	return this.mode;
 };
 
 //trigger table layout
-
 Layout.prototype.layout = function () {
-
 	this.modes[this.mode].call(this, this.table.columnManager.columnsByIndex);
 
 	if (this.mode.indexOf("fitData") === 0 && this.table.options.persistence && this.table.modExists("persistence", true) && this.table.modules.persistence.config.columns) {
-
 		this.table.modules.persistence.save("columns");
 	}
 };
 
 //layout render functions
-
 Layout.prototype.modes = {
 
 	//resize columns to fit data they contain
-
 	"fitData": function fitData(columns) {
-
 		if (this.table.options.virtualDomHoz) {
-
 			this.table.vdomHoz.fitDataLayoutOverride();
 		} else {
-
 			columns.forEach(function (column) {
-
 				column.reinitializeWidth();
 			});
 		}
 
 		if (this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", true)) {
-
 			this.table.modules.responsiveLayout.update();
 		}
 	},
 
 	//resize columns to fit data they contain and stretch row to fill table
-
 	"fitDataFill": function fitDataFill(columns) {
-
 		columns.forEach(function (column) {
-
 			column.reinitializeWidth();
 		});
 
 		if (this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", true)) {
-
 			this.table.modules.responsiveLayout.update();
 		}
 	},
 
 	//resize columns to fit data they contain
-
 	"fitDataTable": function fitDataTable(columns) {
-
 		columns.forEach(function (column) {
-
 			column.reinitializeWidth();
 		});
 
 		if (this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", true)) {
-
 			this.table.modules.responsiveLayout.update();
 		}
 	},
 
 	//resize columns to fit data the contain and stretch last column to fill table
-
 	"fitDataStretch": function fitDataStretch(columns) {
 		var _this41 = this;
 
@@ -9214,92 +9217,64 @@ Layout.prototype.modes = {
 		    lastCol = false;
 
 		columns.forEach(function (column, i) {
-
 			if (!column.widthFixed) {
-
 				column.reinitializeWidth();
 			}
 
 			if (_this41.table.options.responsiveLayout ? column.modules.responsive.visible : column.visible) {
-
 				lastCol = column;
 			}
 
 			if (column.visible) {
-
 				colsWidth += column.getWidth();
 			}
 		});
 
 		if (lastCol) {
-
 			gap = tableWidth - colsWidth + lastCol.getWidth();
 
 			if (this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", true)) {
-
 				lastCol.setWidth(0);
-
 				this.table.modules.responsiveLayout.update();
 			}
 
 			if (gap > 0) {
-
 				lastCol.setWidth(gap);
 			} else {
-
 				lastCol.reinitializeWidth();
 			}
 		} else {
-
 			if (this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", true)) {
-
 				this.table.modules.responsiveLayout.update();
 			}
 		}
 	},
 
 	//resize columns to fit
-
 	"fitColumns": function fitColumns(columns) {
-
 		var self = this;
 
 		var totalWidth = self.table.element.clientWidth; //table element width
-
 		var fixedWidth = 0; //total width of columns with a defined width
-
 		var flexWidth = 0; //total width available to flexible columns
-
 		var flexGrowUnits = 0; //total number of widthGrow blocks accross all columns
-
 		var flexColWidth = 0; //desired width of flexible columns
-
 		var flexColumns = []; //array of flexible width columns
-
 		var fixedShrinkColumns = []; //array of fixed width columns that can shrink
-
 		var flexShrinkUnits = 0; //total number of widthShrink blocks accross all columns
-
 		var overflowWidth = 0; //horizontal overflow width
-
 		var gapFill = 0; //number of pixels to be added to final column to close and half pixel gaps
 
-
 		function calcWidth(width) {
-
 			var colWidth;
 
 			if (typeof width == "string") {
-
 				if (width.indexOf("%") > -1) {
-
 					colWidth = totalWidth / 100 * parseInt(width);
 				} else {
-
 					colWidth = parseInt(width);
 				}
 			} else {
-
 				colWidth = width;
 			}
 
@@ -9307,7 +9282,6 @@ Layout.prototype.modes = {
 		}
 
 		//ensure columns resize to take up the correct amount of space
-
 		function scaleColumns(columns, freeSpace, colWidth, shrinkCols) {
 
 			var oversizeCols = [],
@@ -9320,51 +9294,37 @@ Layout.prototype.modes = {
 			    undersizeCols = [];
 
 			function calcGrow(col) {
-
 				return colWidth * (col.column.definition.widthGrow || 1);
 			}
 
 			function calcShrink(col) {
-
 				return calcWidth(col.width) - colWidth * (col.column.definition.widthShrink || 0);
 			}
 
 			columns.forEach(function (col, i) {
-
 				var width = shrinkCols ? calcShrink(col) : calcGrow(col);
-
 				if (col.column.minWidth >= width) {
-
 					oversizeCols.push(col);
 				} else {
-
 					if (col.column.maxWidth && col.column.maxWidth < width) {
-
 						col.width = col.column.maxWidth;
-
 						freeSpace -= col.column.maxWidth;
 
 						remainingFlexGrowUnits -= shrinkCols ? col.column.definition.widthShrink || 1 : col.column.definition.widthGrow || 1;
 
 						if (remainingFlexGrowUnits) {
-
 							colWidth = Math.floor(freeSpace / remainingFlexGrowUnits);
 						}
 					} else {
-
 						undersizeCols.push(col);
-
 						changeUnits += shrinkCols ? col.column.definition.widthShrink || 1 : col.column.definition.widthGrow || 1;
 					}
 				}
 			});
 
 			if (oversizeCols.length) {
-
 				oversizeCols.forEach(function (col) {
-
 					oversizeSpace += shrinkCols ? col.width - col.column.minWidth : col.column.minWidth;
-
 					col.width = col.column.minWidth;
 				});
 
@@ -9376,11 +9336,9 @@ Layout.prototype.modes = {
 
 				gap += scaleColumns(undersizeCols, remainingSpace, nextColWidth, shrinkCols);
 			} else {
-
 				gap = changeUnits ? freeSpace - Math.floor(freeSpace / changeUnits) * changeUnits : freeSpace;
 
 				undersizeCols.forEach(function (column) {
-
 					column.width = shrinkCols ? calcShrink(column) : calcGrow(column);
 				});
 			}
@@ -9389,25 +9347,20 @@ Layout.prototype.modes = {
 		}
 
 		if (this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", true)) {
-
 			this.table.modules.responsiveLayout.update();
 		}
 
 		//adjust for vertical scrollbar if present
-
 		if (this.table.rowManager.element.scrollHeight > this.table.rowManager.element.clientHeight) {
-
 			totalWidth -= this.table.rowManager.element.offsetWidth - this.table.rowManager.element.clientWidth;
 		}
 
 		columns.forEach(function (column) {
-
 			var width, minWidth, colWidth;
 
 			if (column.visible) {
 
 				width = column.definition.width;
-
 				minWidth = parseInt(column.minWidth);
 
 				if (width) {
@@ -9417,85 +9370,61 @@ Layout.prototype.modes = {
 					fixedWidth += colWidth > minWidth ? colWidth : minWidth;
 
 					if (column.definition.widthShrink) {
-
 						fixedShrinkColumns.push({
-
 							column: column,
-
 							width: colWidth > minWidth ? colWidth : minWidth
-
 						});
-
 						flexShrinkUnits += column.definition.widthShrink;
 					}
 				} else {
-
 					flexColumns.push({
-
 						column: column,
-
 						width: 0
-
 					});
-
 					flexGrowUnits += column.definition.widthGrow || 1;
 				}
 			}
 		});
 
 		//calculate available space
-
 		flexWidth = totalWidth - fixedWidth;
 
 		//calculate correct column size
-
 		flexColWidth = Math.floor(flexWidth / flexGrowUnits);
 
 		//generate column widths
-
 		var gapFill = scaleColumns(flexColumns, flexWidth, flexColWidth, false);
 
 		//increase width of last column to account for rounding errors
-
 		if (flexColumns.length && gapFill > 0) {
-
 			flexColumns[flexColumns.length - 1].width += +gapFill;
 		}
 
 		//caculate space for columns to be shrunk into
-
 		flexColumns.forEach(function (col) {
-
 			flexWidth -= col.width;
 		});
 
 		overflowWidth = Math.abs(gapFill) + flexWidth;
 
 		//shrink oversize columns if there is no available space
-
 		if (overflowWidth > 0 && flexShrinkUnits) {
-
 			gapFill = scaleColumns(fixedShrinkColumns, overflowWidth, Math.floor(overflowWidth / flexShrinkUnits), true);
 		}
 
 		//decrease width of last column to account for rounding errors
-
 		if (fixedShrinkColumns.length) {
-
 			fixedShrinkColumns[fixedShrinkColumns.length - 1].width -= gapFill;
 		}
 
 		flexColumns.forEach(function (col) {
-
 			col.column.setWidth(col.width);
 		});
 
 		fixedShrinkColumns.forEach(function (col) {
-
 			col.column.setWidth(col.width);
 		});
 	}
-
 };
 
 Tabulator.prototype.registerModule("layout", Layout);
@@ -9746,13 +9675,3 @@ Comms.prototype.receive = function (table, module, action, data) {
 };
 
 Tabulator.prototype.registerModule("comms", Comms);
-Tabulator.prototype.getVerticalScroll = function () {
-    var rowHolder = this.rowManager.getElement();
-    var scrollTop = rowHolder.scrollTop;
-    return scrollTop;
-}
-
-Tabulator.prototype.setVerticalScroll = function (top) {
-    var rowHolder = this.rowManager.getElement();
-    rowHolder.scrollTop = top;
-}

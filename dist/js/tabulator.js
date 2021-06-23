@@ -1218,7 +1218,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 				_this4.table.modules.columnCalcs.recalc(_this4.table.rowManager.activeRows);
 			}
 
-			_this4.redraw(true);
+			_this4.redraw(true, true);
 
 			if (_this4.table.modules.layout.getMode() != "fitColumns") {
 
@@ -1287,7 +1287,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	//redraw columns
 
 
-	ColumnManager.prototype.redraw = function (force) {
+	ColumnManager.prototype.redraw = function (force, preserveScroll) {
 
 		if (force) {
 
@@ -1296,7 +1296,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 				this._verticalAlignHeaders();
 			}
 
-			this.table.rowManager.resetScroll();
+			if (!preserveScroll) {
+
+				this.table.rowManager.resetScroll();
+			}
 
 			this.table.rowManager.reinitialize();
 		}
@@ -3667,6 +3670,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	RowManager.prototype.setData = function (data, renderInPosition, columnsChanged) {
 		var _this12 = this;
 
+		// 4
+
 		var self = this;
 
 		return new Promise(function (resolve, reject) {
@@ -3690,7 +3695,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					_this12.table.columnManager.generateColumnsFromRowData(data);
 				}
 
-				_this12.resetScroll();
+				// this.resetScroll();
+
 
 				_this12._setDataActual(data);
 			}
@@ -3700,6 +3706,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	};
 
 	RowManager.prototype._setDataActual = function (data, renderInPosition) {
+
+		// 5
 
 		var self = this;
 
@@ -4311,6 +4319,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	RowManager.prototype.filterRefresh = function () {
 
+		// 1
+
 		var table = this.table,
 		    options = table.options,
 		    left = this.scrollLeft;
@@ -4391,6 +4401,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	//set active data set
 
 	RowManager.prototype.refreshActiveData = function (stage, skipStage, renderInPosition) {
+
+		//6
 
 		var self = this,
 		    table = this.table,
@@ -11879,6 +11891,22 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		return Array.isArray(results) && !results.length ? false : results;
 	};
 
+	Tabulator.prototype.getVerticalScroll = function () {
+
+		var rowHolder = this.rowManager.getElement();
+
+		var scrollTop = rowHolder.scrollTop;
+
+		return scrollTop;
+	};
+
+	Tabulator.prototype.setVerticalScroll = function (top) {
+
+		var rowHolder = this.rowManager.getElement();
+
+		rowHolder.scrollTop = top;
+	};
+
 	var Layout = function Layout(table) {
 
 		this.table = table;
@@ -11887,7 +11915,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	};
 
 	//initialize layout system
-
 
 	Layout.prototype.initialize = function (layout) {
 
@@ -11911,7 +11938,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	//trigger table layout
 
-
 	Layout.prototype.layout = function () {
 
 		this.modes[this.mode].call(this, this.table.columnManager.columnsByIndex);
@@ -11924,11 +11950,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	//layout render functions
 
-
 	Layout.prototype.modes = {
 
 		//resize columns to fit data they contain
-
 
 		"fitData": function fitData(columns) {
 
@@ -11951,7 +11975,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 		//resize columns to fit data they contain and stretch row to fill table
 
-
 		"fitDataFill": function fitDataFill(columns) {
 
 			columns.forEach(function (column) {
@@ -11967,7 +11990,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 		//resize columns to fit data they contain
 
-
 		"fitDataTable": function fitDataTable(columns) {
 
 			columns.forEach(function (column) {
@@ -11982,7 +12004,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		},
 
 		//resize columns to fit data the contain and stretch last column to fill table
-
 
 		"fitDataStretch": function fitDataStretch(columns) {
 			var _this41 = this;
@@ -12039,37 +12060,27 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 		//resize columns to fit
 
-
 		"fitColumns": function fitColumns(columns) {
 
 			var self = this;
 
 			var totalWidth = self.table.element.clientWidth; //table element width
 
-
 			var fixedWidth = 0; //total width of columns with a defined width
-
 
 			var flexWidth = 0; //total width available to flexible columns
 
-
 			var flexGrowUnits = 0; //total number of widthGrow blocks accross all columns
-
 
 			var flexColWidth = 0; //desired width of flexible columns
 
-
 			var flexColumns = []; //array of flexible width columns
-
 
 			var fixedShrinkColumns = []; //array of fixed width columns that can shrink
 
-
 			var flexShrinkUnits = 0; //total number of widthShrink blocks accross all columns
 
-
 			var overflowWidth = 0; //horizontal overflow width
-
 
 			var gapFill = 0; //number of pixels to be added to final column to close and half pixel gaps
 
@@ -12096,7 +12107,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			}
 
 			//ensure columns resize to take up the correct amount of space
-
 
 			function scaleColumns(columns, freeSpace, colWidth, shrinkCols) {
 
@@ -12185,7 +12195,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			//adjust for vertical scrollbar if present
 
-
 			if (this.table.rowManager.element.scrollHeight > this.table.rowManager.element.clientHeight) {
 
 				totalWidth -= this.table.rowManager.element.offsetWidth - this.table.rowManager.element.clientWidth;
@@ -12236,21 +12245,17 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			//calculate available space
 
-
 			flexWidth = totalWidth - fixedWidth;
 
 			//calculate correct column size
-
 
 			flexColWidth = Math.floor(flexWidth / flexGrowUnits);
 
 			//generate column widths
 
-
 			var gapFill = scaleColumns(flexColumns, flexWidth, flexColWidth, false);
 
 			//increase width of last column to account for rounding errors
-
 
 			if (flexColumns.length && gapFill > 0) {
 
@@ -12258,7 +12263,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			}
 
 			//caculate space for columns to be shrunk into
-
 
 			flexColumns.forEach(function (col) {
 
@@ -12269,14 +12273,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			//shrink oversize columns if there is no available space
 
-
 			if (overflowWidth > 0 && flexShrinkUnits) {
 
 				gapFill = scaleColumns(fixedShrinkColumns, overflowWidth, Math.floor(overflowWidth / flexShrinkUnits), true);
 			}
 
 			//decrease width of last column to account for rounding errors
-
 
 			if (fixedShrinkColumns.length) {
 
@@ -12886,6 +12888,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	//lstandard loading function
 	Ajax.prototype.loadData = function (inPosition, columnsChanged) {
+		//2 
 		var self = this;
 
 		if (this.progressiveLoad) {
@@ -12920,6 +12923,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	Ajax.prototype._loadDataStandard = function (inPosition, columnsChanged) {
 		var _this42 = this;
 
+		// 3
 		return new Promise(function (resolve, reject) {
 			_this42.sendRequest(inPosition).then(function (data) {
 				_this42.table.rowManager.setData(data, inPosition, columnsChanged).then(function () {
@@ -23800,10 +23804,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			if (typeof this.table.options.persistenceWriterFunc === "function") {
 				this.writeFunc = this.table.options.persistenceWriterFunc;
 			} else {
-				if (this.readers[this.table.options.persistenceWriterFunc]) {
-					this.writeFunc = this.readers[this.table.options.persistenceWriterFunc];
+				if (this.writers[this.table.options.persistenceWriterFunc]) {
+					this.writeFunc = this.writers[this.table.options.persistenceWriterFunc];
 				} else {
-					console.warn("Persistence Write Error - invalid reader set", this.table.options.persistenceWriterFunc);
+					console.warn("Persistence Write Error - invalid writer set", this.table.options.persistenceWriterFunc);
 				}
 			}
 		} else {
